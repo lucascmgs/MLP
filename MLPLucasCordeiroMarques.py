@@ -27,6 +27,8 @@ def mse( target_y, obtained_y):
 #Retorna um vetor, cada elemento dividido pelo numero de elementos do vetor
 def mse_prime(target_y, obtained_y):
     size = target_y.shape[0]
+    # if(obtained_y.ndim > 1):
+    #     size = obtained_y.shape[1]
     return 2*(obtained_y - target_y)/size
 
 def create_batches(data, batch_size):
@@ -39,11 +41,8 @@ def create_batches(data, batch_size):
     batch = data[begin:end]
     batches.append(batch)
   if batch_size*number_of_batches<data_size :
-    batches.append(data[batch_size*number_of_batches])
+    batches.append(data[batch_size*number_of_batches:])
   return np.array(batches)
-
-
-
 
 class Layer:
     def __init__(self) -> None:
@@ -97,11 +96,12 @@ class FCLayer(Layer):
     # Importante notar que dE/dX (gradient_input) é um vetor, enquanto dE/dW (gradient_weights) é uma matriz
     def backward(self, gradient_output, learning_rate):
         gradient_input = np.dot(gradient_output, self.weights.T)
+        # (m,n) = bxm bxn 
         gradient_weights = np.dot(self.input.T,gradient_output)
         gradient_bias = np.sum(gradient_output,axis=0).reshape((1,-1))
 
-        self.weights -= gradient_weights*learning_rate
-        self.bias -= gradient_bias*learning_rate
+        self.weights -= learning_rate*gradient_weights
+        self.bias -= learning_rate*gradient_bias
         return gradient_input
 
 class Network:
@@ -126,16 +126,14 @@ class Network:
                 output = layer.forward(output)
             result.append(output)
 
-        
         return np.array(result)
 
     def fit(self, x_train, y_train, epochs, mini_batch, learning_rate):
         if mini_batch > 0:
             x_train = create_batches(x_train, mini_batch)
+            y_train = create_batches(y_train, mini_batch)
 
         number_of_samples = x_train.shape[0]
-        
-
         errors_by_epoch = np.array([])
 
         for i in range(epochs):
@@ -155,6 +153,3 @@ class Network:
             print(f"Época:{i+1}, Erro: {error_amount}")
             errors_by_epoch = np.append(errors_by_epoch, error_amount)
         return errors_by_epoch
-
-       
-
